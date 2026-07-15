@@ -1,0 +1,16 @@
+{
+  "name": "pcm-output",
+  "module": "index.ts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build:native": "./build.sh"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.4",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
