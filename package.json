@@ -1,10 +1,23 @@
 {
   "name": "pcm-output",
-  "module": "index.ts",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
   "version": "1.0.0",
   "type": "module",
+  "files": [
+    "index.ts",
+    "src",
+    "native",
+    "scripts",
+    "README.md"
+  ],
   "scripts": {
-    "build:native": "./build.sh"
+    "start": "bun test.ts",
+    "build:native": "bun scripts/build-native.ts",
+    "postinstall": "bun run build:native"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.4",

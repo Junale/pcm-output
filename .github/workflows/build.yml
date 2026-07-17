@@ -1,15 +1,14 @@
-name: Build
+name: CI
 
 on:
-  release:
-    types:
-      - created
+  push:
+    branches:
+      - main
+  pull_request:
 
 
 jobs:
-
   build:
-
     strategy:
       matrix:
         os:
@@ -17,21 +16,18 @@ jobs:
           - macos-latest
           - windows-latest
 
-
     runs-on: ${{ matrix.os }}
 
-
     steps:
+      - uses: actions/checkout@v4
 
-    - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
 
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
 
-    - name: Build
-      run: |
-        ./scripts/build.sh
+      - name: Build native library
+        run: bun run build:native
 
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: native-${{ matrix.os }}
-        path: prebuilds/
+      - name: Typecheck package entrypoints
+        run: bunx tsc --noEmit

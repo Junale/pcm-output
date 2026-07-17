@@ -1,4 +1,4 @@
-import { AudioOutput } from "./src/index.ts";
+import { AudioOutput } from "pcm-output";
 
 const audio = new AudioOutput();
 
