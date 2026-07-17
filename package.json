@@ -1,5 +1,5 @@
 {
-  "name": "pcm-output",
+  "name": "@junale/pcm-output",
   "main": "./index.ts",
   "module": "./index.ts",
   "exports": {
@@ -7,6 +7,10 @@
   },
   "version": "1.0.0",
   "type": "module",
+  "repository": "https://github.com/Junale/pcm-output.git",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "files": [
     "index.ts",
     "src",

@@ -1,4 +1,4 @@
-import { AudioOutput } from "pcm-output";
+import { AudioOutput } from "@junale/pcm-output";
 
 const audio = new AudioOutput();
 
