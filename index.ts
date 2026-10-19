@@ -1,4 +1,4 @@
-export { AudioOutput, MusicEngine } from "./src/index.ts";
+export { AudioOutput, MusicEngine, renderMusic } from "./src/index.ts";
 export type {
 	AudioOutputOptions,
 	Effect,

@@ -20,6 +20,7 @@
   ],
   "scripts": {
     "start": "bun test.ts",
+    "test": "bun test",
     "build:native": "bun scripts/build-native.ts",
     "postinstall": "bun run build:native"
   },
