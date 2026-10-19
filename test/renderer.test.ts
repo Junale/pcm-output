@@ -6,7 +6,7 @@ describe("renderMusic", () => {
 	test("uses BPM and note duration for sample timing", () => {
 		const samples = renderMusic(track([{ staffs: [staff(0, 1)] }]), options);
 
-		expect(samples.length).toBe(110);
+		expect(samples.length).toBe(410);
 		expect(samples[0]).toBe(0);
 		expect(Math.abs(samples[1] ?? 0)).toBeGreaterThan(0);
 	});
@@ -17,9 +17,8 @@ describe("renderMusic", () => {
 			options,
 		);
 
-		expect(samples.length).toBe(210);
-		expect(Math.abs(samples[100] ?? 0)).toBeGreaterThan(0);
-		expect(Math.abs(samples[101] ?? 0)).toBeGreaterThan(0);
+		expect(samples.length).toBe(810);
+		expect(Math.abs(samples[401] ?? 0)).toBeGreaterThan(0);
 	});
 
 	test("starts the next stack after the previous stack repetitions", () => {
@@ -31,8 +30,8 @@ describe("renderMusic", () => {
 			options,
 		);
 
-		expect(samples.length).toBe(310);
-		expect(Math.abs(samples[201] ?? 0)).toBeGreaterThan(0);
+		expect(samples.length).toBe(1210);
+		expect(Math.abs(samples[801] ?? 0)).toBeGreaterThan(0);
 	});
 
 	test("maps noteIndex through the selected scale", () => {
@@ -56,5 +55,23 @@ describe("renderMusic", () => {
 		expect(() => renderMusic(track([{ staffs: [staff(0, 0)] }]), options)).toThrow();
 		expect(() => renderMusic(track([{ itterations: 1.5, staffs: [staff(0)] }]), options)).toThrow();
 		expect(() => renderMusic({ ...track([]), bpm: 0 }, options)).toThrow();
+	});
+
+	test("keeps every staff within four beats", () => {
+		expect(() => renderMusic(track([{ staffs: [staff(0, 4.01)] }]), options)).toThrow(
+		"Staff events must end within four beats",
+	);
+	});
+
+	test("keeps the next stack aligned to the four-beat staff boundary", () => {
+		const samples = renderMusic(
+			track([
+				{ staffs: [{ ...staff(0, 0.5), events: [{ start: 3, duration: 0.5, noteIndex: 0 }] }] },
+				{ staffs: [staff(1, 1)] },
+			]),
+			options,
+		);
+
+		expect(samples.length).toBe(810);
 	});
 });

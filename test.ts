@@ -9,15 +9,6 @@ const Kick: Instrument = {
     release: 0.1,
 };
 
-const Synth: Instrument = {
-    waveform: "saw",
-    amplitude: 0.5,
-    attack: 0.01,
-    decay: 0.1,
-    sustain: 0.7,
-    release: 0.2,
-};
-
 const DrumLine: Staff = {
     instrument: Kick,
     scale: "major",
@@ -31,37 +22,16 @@ const DrumLine: Staff = {
     ],
 };
 
-const SynthLine: Staff = {
-    instrument: Synth,
-    scale: "major",
-    noteStart: "C",
-    octaveStart: 4,
-    events: [
-        { start: 0, duration: 1, noteIndex: 0, effect: { velocity: 0.8 } },
-        { start: 1, duration: 1, noteIndex: 2, effect: { velocity: 0.8 } },
-        { start: 2, duration: 1, noteIndex: 4, effect: { velocity: 0.8 } },
-        { start: 3, duration: 1, noteIndex: 5, effect: { velocity: 0.8 } },
-    ],
-};
-
-
 const Intro: Stack = {
     staffs: [DrumLine],
-    itterations: 2,
-    
+    itterations: 1,
 };
-
-const Verse: Stack = {
-    staffs: [SynthLine, DrumLine],
-};
-
 
 const music: Track = {
 	bpm: 120,
 	loop: true,
 	sequence: [
         Intro,
-        Verse,
 	],
 };
 

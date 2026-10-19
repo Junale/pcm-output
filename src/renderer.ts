@@ -1,4 +1,4 @@
-import { DEFAULT_INSTRUMENT, NOTE_OFFSETS, SCALE_INTERVALS } from "./constants.ts";
+import { DEFAULT_INSTRUMENT, NOTE_OFFSETS, SCALE_INTERVALS, STAFF_BEATS } from "./constants.ts";
 import type { Effect, RenderOptions, Scale, Stack, Track, Voice, Waveform } from "./types.ts";
 
 function noteToFrequency(noteIndex: number, noteStart: keyof typeof NOTE_OFFSETS, octaveStart: number, scale: Scale): number {
@@ -61,13 +61,14 @@ function addStackVoices(
 	sampleRate: number,
 	voices: Voice[],
 ): number {
-	let stackDuration = 0;
 	for (const staff of stack.staffs) {
 		for (const event of staff.events) {
 			if (event.start < 0 || event.duration <= 0) {
 				throw new Error("Note events need a non-negative start and positive duration");
 			}
-			stackDuration = Math.max(stackDuration, event.start + event.duration);
+			if (event.start + event.duration > STAFF_BEATS) {
+				throw new Error("Staff events must end within four beats");
+			}
 		}
 	}
 
@@ -77,7 +78,7 @@ function addStackVoices(
 	}
 
 	for (let iteration = 0; iteration < itterations; iteration++) {
-		const iterationStart = stackStart + iteration * stackDuration;
+		const iterationStart = stackStart + iteration * STAFF_BEATS;
 		for (const staff of stack.staffs) {
 			const scale = staff.scale ?? "major";
 			const noteStart = staff.noteStart ?? "C";
@@ -100,7 +101,7 @@ function addStackVoices(
 			}
 		}
 	}
-	return stackDuration * itterations;
+	return STAFF_BEATS * itterations;
 }
 
 export function renderMusic(music: Track, options: RenderOptions): Float32Array {

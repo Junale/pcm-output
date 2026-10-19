@@ -1,5 +1,7 @@
 import type { Instrument } from "./types.ts";
 
+export const STAFF_BEATS = 4;
+
 export const DEFAULT_INSTRUMENT: Required<Instrument> = {
 	waveform: "sine",
 	amplitude: 0.25,
