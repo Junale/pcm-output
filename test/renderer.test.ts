@@ -74,4 +74,13 @@ describe("renderMusic", () => {
 
 		expect(samples.length).toBe(810);
 	});
+
+	test("does not include release padding in a looping track", () => {
+		const samples = renderMusic(
+			{ ...track([{ staffs: [staff(0, 1)] }]), loop: true },
+			options,
+		);
+
+		expect(samples.length).toBe(400);
+	});
 });

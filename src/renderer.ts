@@ -112,10 +112,12 @@ export function renderMusic(music: Track, options: RenderOptions): Float32Array 
 		totalBeats += addStackVoices(stack, totalBeats, music.effect, music.bpm, options.sampleRate, voices);
 	}
 
-	const releaseSamples = voices.reduce(
-		(maximum, voice) => Math.max(maximum, Math.ceil(voice.instrument.release * options.sampleRate)),
-		0,
-	);
+	const releaseSamples = music.loop
+		? 0
+		: voices.reduce(
+				(maximum, voice) => Math.max(maximum, Math.ceil(voice.instrument.release * options.sampleRate)),
+				0,
+			);
 	const totalSamples = Math.ceil(totalBeats * (60 / music.bpm) * options.sampleRate) + releaseSamples;
 	const output = new Float32Array(totalSamples * options.channels);
 
