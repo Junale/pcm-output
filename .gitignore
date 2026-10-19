@@ -6,7 +6,7 @@ out
 dist
 *.tgz
 
-./native/libcm-output.so
+native/libpcm-output.*
 
 # code coverage
 coverage
