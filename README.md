@@ -1,5 +1,7 @@
 # pcm-output
 
+See the [documentation](docs/README.md).
+
 To install dependencies:
 
 ```bash
