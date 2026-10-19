@@ -1,3 +1,5 @@
+import type { NOTE_OFFSETS } from "./constants.ts";
+
 export type Waveform = "sine" | "square" | "saw" | "triangle" | "noise";
 
 export type Instrument = {
@@ -9,23 +11,42 @@ export type Instrument = {
 	release?: number;
 };
 
-export type NoteEvent = {
-	start: number;
-	duration: number;
-	note: string;
+export type NoteName = keyof typeof NOTE_OFFSETS;
+
+export type Scale = "major" | "minor" | "dorian" | "phrygian" | "lydian" | "mixolydian" | "locrian";
+
+export type Effect = {
 	velocity?: number;
 	pan?: number;
 };
 
-export type Track = {
-	instrument: Instrument;
-	events: NoteEvent[];
+export type NoteEvent = {
+	start: number;
+	duration: number;
+	noteIndex: number;
+	effect?: Effect;
 };
 
-export type Music = {
+export type Staff = {
+	instrument: Instrument;
+	events: NoteEvent[];
+	scale?: Scale;
+	noteStart?: NoteName;
+	octaveStart?: number;
+	effect?: Effect;
+};
+
+export type Stack = {
+	staffs: Staff[];
+	effect?: Effect;
+	itterations?: number;
+};
+
+export type Track = {
 	bpm: number;
 	loop: boolean;
-	tracks: Track[];
+	sequence: Stack[];
+	effect?: Effect;
 };
 
 export type MusicEngineOptions = {

@@ -9,7 +9,7 @@ export const DEFAULT_INSTRUMENT: Required<Instrument> = {
 	release: 0.2,
 };
 
-export const NOTE_OFFSETS: Record<string, number> = {
+export const NOTE_OFFSETS = {
 	C: 0,
 	"C#": 1,
 	Db: 1,
@@ -27,4 +27,14 @@ export const NOTE_OFFSETS: Record<string, number> = {
 	"A#": 10,
 	Bb: 10,
 	B: 11,
-};
+} as const;
+
+export const SCALE_INTERVALS = {
+	major: [0, 2, 4, 5, 7, 9, 11],
+	minor: [0, 2, 3, 5, 7, 8, 10],
+	dorian: [0, 2, 3, 5, 7, 9, 10],
+	phrygian: [0, 1, 3, 5, 7, 8, 10],
+	lydian: [0, 2, 4, 6, 7, 9, 11],
+	mixolydian: [0, 2, 4, 5, 7, 9, 10],
+	locrian: [0, 1, 3, 5, 6, 8, 10],
+} as const;

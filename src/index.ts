@@ -2,12 +2,14 @@ export { AudioOutput } from "./audio-output.ts";
 export { MusicEngine } from "./music-engine.ts";
 export type {
 	AudioOutputOptions,
-	Instrument,
-	Music,
+	Effect,
+	Instrument, Track as Music,
 	MusicEngineOptions,
-	NoteEvent,
-	RenderOptions,
-	Track,
+	NoteEvent, NoteName, RenderOptions,
+	Scale,
+	Stack,
+	Staff,
 	Voice,
-	Waveform,
+	Waveform
 } from "./types.ts";
+
