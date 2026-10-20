@@ -112,6 +112,30 @@ describe("renderMusic", () => {
 		expect(samples.length).toBe(810);
 	});
 
+	test("repeats shorter staffs to fill the longest staff", () => {
+		const samples = renderMusic(
+			track([
+				{
+					staffs: [
+						{
+							...staff(0),
+							events: [
+								{ start: 0, duration: 1, noteIndex: 0 },
+								{ start: 4, duration: 1, noteIndex: 1 },
+							],
+						},
+						staff(1),
+					],
+				},
+			]),
+			options,
+		);
+
+		expect(samples.length).toBe(810);
+		expect(Math.abs(samples[1] ?? 0)).toBeGreaterThan(0);
+		expect(Math.abs(samples[401] ?? 0)).toBeGreaterThan(0);
+	});
+
 	test("keeps the next stack aligned to the four-beat staff boundary", () => {
 		const samples = renderMusic(
 			track([

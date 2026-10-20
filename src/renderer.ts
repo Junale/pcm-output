@@ -85,20 +85,22 @@ function addStackVoices(
 	sampleRate: number,
 	voices: Voice[],
 ): number {
-	let staffCount = 1;
-	for (const staff of stack.staffs) {
+	const staffBlockCounts = stack.staffs.map((staff) => {
+		let blockCount = 1;
 		for (const event of staff.events) {
 			if (event.start < 0 || event.duration <= 0) {
 				throw new Error(
 					"Note events need a non-negative start and positive duration",
 				);
 			}
-			staffCount = Math.max(
-				staffCount,
+			blockCount = Math.max(
+				blockCount,
 				Math.ceil((event.start + event.duration) / STAFF_BEATS),
 			);
 		}
-	}
+		return blockCount;
+	});
+	const staffCount = Math.max(1, ...staffBlockCounts);
 
 	const itterations = stack.iterations ?? 1;
 	if (!Number.isInteger(itterations) || itterations < 0) {
@@ -108,37 +110,42 @@ function addStackVoices(
 	for (let iteration = 0; iteration < itterations; iteration++) {
 		const iterationStart =
 			stackStart + iteration * STAFF_BEATS * staffCount;
-		for (const staff of stack.staffs) {
+		for (const [staffIndex, staff] of stack.staffs.entries()) {
 			const scale = staff.scale ?? "major";
 			const noteStart = staff.noteStart ?? "C";
 			const octaveStart = staff.octaveStart ?? 4;
 			const instrument = { ...DEFAULT_INSTRUMENT, ...staff.instrument };
-			for (const event of staff.events) {
-				const effect = mergeEffects(
-					trackEffect,
-					stack.effect,
-					staff.effect,
-					event.effect,
-				);
-				const startBeat = iterationStart + event.start;
-				const startSample = Math.round(startBeat * (60 / bpm) * sampleRate);
-				const endSample = Math.round(
-					(startBeat + event.duration) * (60 / bpm) * sampleRate,
-				);
-				voices.push({
-					startSample,
-					endSample,
-					frequency: noteToFrequency(
-						event.noteIndex,
-						noteStart,
-						octaveStart,
-						scale,
-					),
-					velocity: effect.velocity,
-					pan: effect.pan,
-					instrument,
-					phase: 0,
-				});
+			const blockCount = staffBlockCounts[staffIndex] ?? 1;
+			const repeats = Math.ceil(staffCount / blockCount);
+			for (let repeat = 0; repeat < repeats; repeat++) {
+				const repeatStart = iterationStart + repeat * blockCount * STAFF_BEATS;
+				for (const event of staff.events) {
+					const effect = mergeEffects(
+						trackEffect,
+						stack.effect,
+						staff.effect,
+						event.effect,
+					);
+					const startBeat = repeatStart + event.start;
+					const startSample = Math.round(startBeat * (60 / bpm) * sampleRate);
+					const endSample = Math.round(
+						(startBeat + event.duration) * (60 / bpm) * sampleRate,
+					);
+					voices.push({
+						startSample,
+						endSample,
+						frequency: noteToFrequency(
+							event.noteIndex,
+							noteStart,
+							octaveStart,
+							scale,
+						),
+						velocity: effect.velocity,
+						pan: effect.pan,
+						instrument,
+						phase: 0,
+					});
+				}
 			}
 		}
 	}
