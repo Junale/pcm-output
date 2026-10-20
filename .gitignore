@@ -9,6 +9,8 @@ dist
 .vscode
 native/libpcm-output.*
 
+*.wav
+
 # code coverage
 coverage
 *.lcov
