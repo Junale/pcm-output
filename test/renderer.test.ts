@@ -1,8 +1,138 @@
 import { describe, expect, test } from "bun:test";
 import { renderMusic } from "../src/renderer.ts";
+import type { Instrument } from "../src/types.ts";
 import { options, staff, track } from "./mocks.ts";
 
+const synthesisOptions = { sampleRate: 10_000, channels: 1 };
+
+function synthesisStaff(instrument: Instrument, duration = 1, velocity = 1) {
+	return {
+		instrument,
+		octaveStart: -1,
+		events: [{ start: 0, duration, noteIndex: 0, effect: { velocity } }],
+	};
+}
+
+function instrument(
+	partials: Instrument["partials"],
+	response: Instrument["velocityResponse"] = { volume: 1, brightness: 0 },
+): Instrument {
+	return {
+		amplitude: 1,
+		partials,
+		envelope: { attack: 0, decay: 1000, release: 0, curve: "exponential" },
+		velocityResponse: response,
+	};
+}
+
+function projection(samples: Float32Array, frequency: number): number {
+	let sum = 0;
+	for (let index = 100; index < samples.length; index++) {
+		sum += (samples[index] ?? 0) * Math.sin((2 * Math.PI * frequency * index) / 10_000);
+	}
+	return Math.abs(sum);
+}
+
+function rms(samples: Float32Array, start: number, end: number): number {
+	let sum = 0;
+	for (let index = start; index < end; index++) {
+		const sample = samples[index] ?? 0;
+		sum += sample * sample;
+	}
+	return Math.sqrt(sum / (end - start));
+}
+
 describe("renderMusic", () => {
+	test("renders all partials instead of only the fundamental", () => {
+		const fundamental = renderMusic(
+			track([{ staffs: [synthesisStaff(instrument([{ ratio: 1, level: 1, waveform: "sine" }]))] }]),
+			synthesisOptions,
+		);
+		const harmonics = renderMusic(
+			track([
+				{
+					staffs: [
+						synthesisStaff(instrument([
+							{ ratio: 1, level: 1, waveform: "sine" },
+							{ ratio: 2, level: 1, waveform: "sine" },
+						]))],
+				},
+			]),
+			synthesisOptions,
+		);
+
+		expect(harmonics[10]).not.toBeCloseTo(fundamental[10] ?? 0, 5);
+	});
+
+	test("uses partial ratios and detuning to set oscillator pitch", () => {
+		const fundamental = renderMusic(
+			track([{ staffs: [synthesisStaff(instrument([{ ratio: 1, level: 1, waveform: "sine" }]))] }]),
+			synthesisOptions,
+		);
+		const octave = renderMusic(
+			track([{ staffs: [synthesisStaff(instrument([{ ratio: 2, level: 1, waveform: "sine" }]))] }]),
+			synthesisOptions,
+		);
+		const detuned = renderMusic(
+			track([
+				{
+					staffs: [
+						synthesisStaff(instrument([{ ratio: 1, level: 1, waveform: "sine", detuneCents: 1200 }]))],
+				},
+			]),
+			synthesisOptions,
+		);
+
+		expect(octave[10]).toBeCloseTo(fundamental[20] ?? 0, 2);
+		expect(detuned[10]).toBeCloseTo(octave[10] ?? 0, 2);
+	});
+
+	test("maps velocity to loudness and harmonic brightness", () => {
+		const response = { volume: 1, brightness: 1 };
+		const soft = renderMusic(
+			track([{ staffs: [synthesisStaff(instrument([
+				{ ratio: 1, level: 1, waveform: "sine" },
+				{ ratio: 2, level: 1, waveform: "sine" },
+			], response), 0.5, 0.2)] }]),
+			synthesisOptions,
+		);
+		const hard = renderMusic(
+			track([{ staffs: [synthesisStaff(instrument([
+				{ ratio: 1, level: 1, waveform: "sine" },
+				{ ratio: 2, level: 1, waveform: "sine" },
+			], response), 0.5, 1)] }]),
+			synthesisOptions,
+		);
+
+		expect(Math.max(...hard.map(Math.abs))).toBeGreaterThan(Math.max(...soft.map(Math.abs)));
+		expect(projection(hard, 261.624)).toBeGreaterThan(projection(soft, 261.624));
+	});
+
+	test("keeps exponential decay falling during a held note", () => {
+		const samples = renderMusic(
+			track([{ staffs: [synthesisStaff({
+				...instrument([{ ratio: 1, level: 1, waveform: "sine" }]),
+				envelope: { attack: 0, decay: 1, release: 0, curve: "exponential" },
+			}, 1)] }]),
+			synthesisOptions,
+		);
+
+		expect(rms(samples, 100, 1_000)).toBeGreaterThan(rms(samples, 5_000, 6_000));
+	});
+
+	test("starts release at the current envelope level", () => {
+		const samples = renderMusic(
+			track([{ staffs: [synthesisStaff({
+				...instrument([{ ratio: 1, level: 1, waveform: "sine" }]),
+				envelope: { attack: 0, decay: 2, release: 1, curve: "exponential" },
+			}, 0.5)] }]),
+			synthesisOptions,
+		);
+
+		expect(rms(samples, 4_800, 5_000)).toBeGreaterThan(0);
+		expect(rms(samples, 5_000, 6_000)).toBeGreaterThan(rms(samples, 14_000, 15_000));
+	});
+
 	test("uses BPM and note duration for sample timing", () => {
 		const samples = renderMusic(track([{ staffs: [staff(0, 1)] }]), options);
 

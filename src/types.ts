@@ -2,13 +2,32 @@ import type { NOTE_OFFSETS } from "./constants.ts";
 
 export type Waveform = "sine" | "square" | "saw" | "triangle" | "noise";
 
-export type Instrument = {
+export type Partial = {
+	ratio: number;
+	level: number;
 	waveform: Waveform;
-	amplitude?: number;
-	attack?: number;
-	decay?: number;
-	sustain?: number;
-	release?: number;
+	detuneCents?: number;
+};
+
+export type Envelope = {
+	attack: number;
+	decay: number;
+	release: number;
+	curve: "linear" | "exponential";
+};
+
+export type VelocityResponse = {
+	/** Loudness multiplier for event velocity, constrained to [0, 1]. */
+	volume: number;
+	/** Higher-partial boost for event velocity, constrained to [0, 1]. */
+	brightness: number;
+};
+
+export type Instrument = {
+	amplitude: number;
+	partials: Partial[];
+	envelope: Envelope;
+	velocityResponse: VelocityResponse;
 };
 
 export type NoteName = keyof typeof NOTE_OFFSETS;
@@ -78,6 +97,6 @@ export type Voice = {
 	frequency: number;
 	velocity: number;
 	pan: number;
-	instrument: Required<Instrument>;
-	phase: number;
+	instrument: Instrument;
+	phase: number[];
 };

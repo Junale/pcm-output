@@ -1,11 +1,12 @@
 import {
-	DEFAULT_INSTRUMENT,
 	NOTE_OFFSETS,
 	SCALE_INTERVALS,
 	STAFF_BEATS,
 } from "./constants.ts";
 import type {
 	Effect,
+	Instrument,
+	Partial,
 	RenderOptions,
 	Scale,
 	Stack,
@@ -52,22 +53,89 @@ function waveformSample(waveform: Waveform, phase: number): number {
 	}
 }
 
+function validateInstrument(instrument: Instrument): void {
+	if (!Number.isFinite(instrument.amplitude) || instrument.amplitude < 0) {
+		throw new Error("Instrument amplitude must be a non-negative number");
+	}
+	if (instrument.partials.length === 0) {
+		throw new Error("Instrument needs at least one partial");
+	}
+	for (const partial of instrument.partials) {
+		if (!Number.isFinite(partial.ratio) || partial.ratio <= 0) {
+			throw new Error("Partial ratios must be positive numbers");
+		}
+		if (!Number.isFinite(partial.level) || partial.level < 0) {
+			throw new Error("Partial levels must be non-negative numbers");
+		}
+		if (
+			partial.detuneCents !== undefined &&
+			!Number.isFinite(partial.detuneCents)
+		) {
+			throw new Error("Partial detuning must be a finite number");
+		}
+	}
+	const { attack, decay, release, curve } = instrument.envelope;
+	if (
+		![attack, decay, release].every(Number.isFinite) ||
+		attack < 0 ||
+		decay < 0 ||
+		release < 0 ||
+		(curve !== "linear" && curve !== "exponential")
+	) {
+		throw new Error("Envelope times must be non-negative and curve must be valid");
+	}
+	const { volume, brightness } = instrument.velocityResponse;
+	if (
+		![volume, brightness].every(Number.isFinite) ||
+		volume < 0 ||
+		volume > 1 ||
+		brightness < 0 ||
+		brightness > 1
+	) {
+		throw new Error("Velocity response values must be between zero and one");
+	}
+}
+
+function envelopeLevel(voice: Voice, elapsed: number): number {
+	const { attack, decay, curve } = voice.instrument.envelope;
+	if (attack > 0 && elapsed < attack) return elapsed / attack;
+	const decayElapsed = Math.max(0, elapsed - attack);
+	if (decay === 0) return 0;
+	if (curve === "linear") return Math.max(0, 1 - decayElapsed / decay);
+	return Math.exp((-5 * decayElapsed) / decay);
+}
+
 function envelope(voice: Voice, sample: number, sampleRate: number): number {
 	const elapsed = (sample - voice.startSample) / sampleRate;
 	const duration = (voice.endSample - voice.startSample) / sampleRate;
-	const attack = Math.max(voice.instrument.attack, 0.000001);
-	const decay = Math.max(voice.instrument.decay, 0.000001);
-	const release = Math.max(voice.instrument.release, 0.000001);
+	if (elapsed < duration) return envelopeLevel(voice, elapsed);
+	const releaseElapsed = elapsed - duration;
+	const release = voice.instrument.envelope.release;
+	if (release === 0) return 0;
+	return envelopeLevel(voice, duration) * Math.exp((-5 * releaseElapsed) / release);
+}
 
-	if (elapsed < attack) return elapsed / attack;
-	if (elapsed < attack + decay) {
-		const progress = (elapsed - attack) / decay;
-		return 1 - progress * (1 - voice.instrument.sustain);
-	}
-	if (elapsed < duration) return voice.instrument.sustain;
-
-	const releaseProgress = (elapsed - duration) / release;
-	return Math.max(0, voice.instrument.sustain * (1 - releaseProgress));
+function preparePartials(
+	voice: Voice,
+): { partial: Partial; level: number; frequency: number }[] {
+	const brightness = voice.instrument.velocityResponse.brightness;
+	const maximumRatio = Math.max(
+		...voice.instrument.partials.map((partial) => partial.ratio),
+	);
+	const adjustedLevels = voice.instrument.partials.map((partial) =>
+		partial.level *
+			(1 + brightness * voice.velocity * (partial.ratio / maximumRatio)),
+	);
+	const levelTotal = adjustedLevels.reduce((sum, level) => sum + level, 0);
+	if (levelTotal === 0) return [];
+	return voice.instrument.partials.map((partial, index) => ({
+		partial,
+		level: (adjustedLevels[index] ?? 0) / levelTotal,
+		frequency:
+			voice.frequency *
+			partial.ratio *
+			2 ** ((partial.detuneCents ?? 0) / 1200),
+	}));
 }
 
 function mergeEffects(...effects: (Effect | undefined)[]): Required<Effect> {
@@ -115,7 +183,8 @@ function addStackVoices(
 			const scale = staff.scale ?? "major";
 			const noteStart = staff.noteStart ?? "C";
 			const octaveStart = staff.octaveStart ?? 4;
-			const instrument = { ...DEFAULT_INSTRUMENT, ...staff.instrument };
+			const instrument = staff.instrument;
+			validateInstrument(instrument);
 			const blockCount = staffBlockCounts[staffIndex] ?? 1;
 			const repeats = Math.ceil(staffCount / blockCount);
 			for (let repeat = 0; repeat < repeats; repeat++) {
@@ -144,7 +213,7 @@ function addStackVoices(
 						velocity: effect.velocity,
 						pan: effect.pan,
 						instrument,
-						phase: 0,
+						phase: instrument.partials.map(() => 0),
 					});
 				}
 			}
@@ -177,7 +246,9 @@ export function renderMusic(
 				(maximum, voice) =>
 					Math.max(
 						maximum,
-						Math.ceil(voice.instrument.release * options.sampleRate),
+						Math.ceil(
+							voice.instrument.envelope.release * options.sampleRate,
+						),
 					),
 				0,
 			);
@@ -190,17 +261,22 @@ export function renderMusic(
 		const left = Math.cos(((voice.pan + 1) * Math.PI) / 4);
 		const right = Math.sin(((voice.pan + 1) * Math.PI) / 4);
 		const voiceEnd =
-			voice.endSample + voice.instrument.release * options.sampleRate;
+			voice.endSample + voice.instrument.envelope.release * options.sampleRate;
+		const partials = preparePartials(voice);
+		const velocityGain =
+			voice.velocity * voice.instrument.velocityResponse.volume;
 
 		for (let sample = voice.startSample; sample < voiceEnd; sample++) {
+			let sampleValue = 0;
+			for (const [index, { partial, level, frequency }] of partials.entries()) {
+				const phase = voice.phase[index] ?? 0;
+				sampleValue += level * waveformSample(partial.waveform, phase);
+				voice.phase[index] =
+					(phase + (2 * Math.PI * frequency) / options.sampleRate) %
+					(2 * Math.PI);
+			}
 			const amplitude =
-				waveformSample(voice.instrument.waveform, voice.phase) *
-				voice.instrument.amplitude *
-				voice.velocity *
-				envelope(voice, sample, options.sampleRate);
-			voice.phase =
-				(voice.phase + (2 * Math.PI * voice.frequency) / options.sampleRate) %
-				(2 * Math.PI);
+				sampleValue * voice.instrument.amplitude * velocityGain * envelope(voice, sample, options.sampleRate);
 
 			const offset = sample * options.channels;
 			if (output[offset] !== undefined) output[offset] += amplitude * left;

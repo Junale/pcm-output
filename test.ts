@@ -7,21 +7,17 @@ import {
 } from "./index.ts";
 
 const Kick: Instrument = {
-	waveform: "sine",
 	amplitude: 1,
-	attack: 0.0005,
-	decay: 0.1,
-	sustain: 0,
-	release: 0.15,
+	partials: [{ ratio: 1, level: 1, waveform: "sine" }],
+	envelope: { attack: 0.0005, decay: 0.1, release: 0.15, curve: "linear" },
+	velocityResponse: { volume: 1, brightness: 0 },
 };
 
 const Snare: Instrument = {
-	waveform: "noise",
 	amplitude: 0.8,
-	attack: 0.001,
-	decay: 0.08,
-	sustain: 0,
-	release: 0.08,
+	partials: [{ ratio: 1, level: 1, waveform: "noise" }],
+	envelope: { attack: 0.001, decay: 0.08, release: 0.08, curve: "linear" },
+	velocityResponse: { volume: 1, brightness: 0 },
 };
 
 const KickLine: Staff = {

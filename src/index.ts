@@ -4,13 +4,18 @@ export { renderMusic } from "./renderer.ts";
 export type {
 	AudioOutputOptions,
 	Effect,
-	Instrument, Track as Music,
+	Envelope,
+	Instrument,
 	MusicEngineOptions,
-	NoteEvent, NoteName, RenderOptions,
+	NoteEvent,
+	NoteName,
+	Partial,
+	RenderOptions,
 	Scale,
 	Stack,
 	Staff,
+	VelocityResponse,
 	Voice,
-	Waveform
+	Waveform,
 } from "./types.ts";
 

@@ -3,12 +3,18 @@ import type { Instrument } from "./types.ts";
 export const STAFF_BEATS = 4;
 
 export const DEFAULT_INSTRUMENT: Required<Instrument> = {
-	waveform: "sine",
 	amplitude: 0.25,
-	attack: 0.01,
-	decay: 0.1,
-	sustain: 0.7,
-	release: 0.2,
+	partials: [{ ratio: 1, level: 1, waveform: "sine" }],
+	envelope: {
+		attack: 0.01,
+		decay: 0.1,
+		release: 0.2,
+		curve: "exponential",
+	},
+	velocityResponse: {
+		volume: 1,
+		brightness: 0,
+	},
 };
 
 export const NOTE_OFFSETS = {
