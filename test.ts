@@ -50,7 +50,7 @@ const SnareLine: Staff = {
 
 const Intro: Stack = {
 	staffs: [KickLine, SnareLine],
-	itterations: 10,
+	iterations: 10,
 };
 
 const music: Track = {

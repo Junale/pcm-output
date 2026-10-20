@@ -13,7 +13,7 @@ describe("renderMusic", () => {
 
 	test("repeats a stack without changing the iteration duration", () => {
 		const samples = renderMusic(
-			track([{ itterations: 2, staffs: [staff(0, 1)] }]),
+			track([{ iterations: 2, staffs: [staff(0, 1)] }]),
 			options,
 		);
 
@@ -24,7 +24,7 @@ describe("renderMusic", () => {
 	test("starts the next stack after the previous stack repetitions", () => {
 		const samples = renderMusic(
 			track([
-				{ itterations: 2, staffs: [staff(0, 1)] },
+				{ iterations: 2, staffs: [staff(0, 1)] },
 				{ staffs: [staff(1, 1)] },
 			]),
 			options,
@@ -36,7 +36,10 @@ describe("renderMusic", () => {
 
 	test("maps noteIndex through the selected scale", () => {
 		const major = renderMusic(track([{ staffs: [staff(2)] }]), options);
-		const minor = renderMusic(track([{ staffs: [{ ...staff(2), scale: "minor" }] }]), options);
+		const minor = renderMusic(
+			track([{ staffs: [{ ...staff(2), scale: "minor" }] }]),
+			options,
+		);
 
 		expect(major[1]).not.toBe(minor[1]);
 	});
@@ -52,21 +55,32 @@ describe("renderMusic", () => {
 	});
 
 	test("rejects invalid timing values", () => {
-		expect(() => renderMusic(track([{ staffs: [staff(0, 0)] }]), options)).toThrow();
-		expect(() => renderMusic(track([{ itterations: 1.5, staffs: [staff(0)] }]), options)).toThrow();
+		expect(() =>
+			renderMusic(track([{ staffs: [staff(0, 0)] }]), options),
+		).toThrow();
+		expect(() =>
+			renderMusic(track([{ iterations: 1.5, staffs: [staff(0)] }]), options),
+		).toThrow();
 		expect(() => renderMusic({ ...track([]), bpm: 0 }, options)).toThrow();
 	});
 
 	test("keeps every staff within four beats", () => {
-		expect(() => renderMusic(track([{ staffs: [staff(0, 4.01)] }]), options)).toThrow(
-		"Staff events must end within four beats",
-	);
+		expect(() =>
+			renderMusic(track([{ staffs: [staff(0, 4.01)] }]), options),
+		).toThrow("Staff events must end within four beats");
 	});
 
 	test("keeps the next stack aligned to the four-beat staff boundary", () => {
 		const samples = renderMusic(
 			track([
-				{ staffs: [{ ...staff(0, 0.5), events: [{ start: 3, duration: 0.5, noteIndex: 0 }] }] },
+				{
+					staffs: [
+						{
+							...staff(0, 0.5),
+							events: [{ start: 3, duration: 0.5, noteIndex: 0 }],
+						},
+					],
+				},
 				{ staffs: [staff(1, 1)] },
 			]),
 			options,

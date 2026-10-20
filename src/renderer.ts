@@ -1,14 +1,35 @@
-import { DEFAULT_INSTRUMENT, NOTE_OFFSETS, SCALE_INTERVALS, STAFF_BEATS } from "./constants.ts";
-import type { Effect, RenderOptions, Scale, Stack, Track, Voice, Waveform } from "./types.ts";
+import {
+	DEFAULT_INSTRUMENT,
+	NOTE_OFFSETS,
+	SCALE_INTERVALS,
+	STAFF_BEATS,
+} from "./constants.ts";
+import type {
+	Effect,
+	RenderOptions,
+	Scale,
+	Stack,
+	Track,
+	Voice,
+	Waveform,
+} from "./types.ts";
 
-function noteToFrequency(noteIndex: number, noteStart: keyof typeof NOTE_OFFSETS, octaveStart: number, scale: Scale): number {
-	if (!Number.isInteger(noteIndex) || noteIndex < 0) throw new Error("noteIndex must be a non-negative integer");
+function noteToFrequency(
+	noteIndex: number,
+	noteStart: keyof typeof NOTE_OFFSETS,
+	octaveStart: number,
+	scale: Scale,
+): number {
+	if (!Number.isInteger(noteIndex) || noteIndex < 0)
+		throw new Error("noteIndex must be a non-negative integer");
 	const intervals = SCALE_INTERVALS[scale];
 	const octaveOffset = Math.floor(noteIndex / intervals.length);
 	const scaleIndex = noteIndex % intervals.length;
 	const interval = intervals[scaleIndex];
-	if (interval === undefined) throw new Error(`Invalid note index: ${noteIndex}`);
-	const semitone = NOTE_OFFSETS[noteStart] + interval + (octaveOffset + octaveStart) * 12;
+	if (interval === undefined)
+		throw new Error(`Invalid note index: ${noteIndex}`);
+	const semitone =
+		NOTE_OFFSETS[noteStart] + interval + (octaveOffset + octaveStart) * 12;
 	return 440 * 2 ** ((semitone - 57) / 12);
 }
 
@@ -19,7 +40,10 @@ function waveformSample(waveform: Waveform, phase: number): number {
 		case "saw":
 			return 1 - phase / Math.PI;
 		case "triangle":
-			return 1 - 4 * Math.abs(Math.round(phase / (2 * Math.PI)) - phase / (2 * Math.PI));
+			return (
+				1 -
+				4 * Math.abs(Math.round(phase / (2 * Math.PI)) - phase / (2 * Math.PI))
+			);
 		case "noise":
 			return Math.random() * 2 - 1;
 		default:
@@ -64,7 +88,9 @@ function addStackVoices(
 	for (const staff of stack.staffs) {
 		for (const event of staff.events) {
 			if (event.start < 0 || event.duration <= 0) {
-				throw new Error("Note events need a non-negative start and positive duration");
+				throw new Error(
+					"Note events need a non-negative start and positive duration",
+				);
 			}
 			if (event.start + event.duration > STAFF_BEATS) {
 				throw new Error("Staff events must end within four beats");
@@ -72,7 +98,7 @@ function addStackVoices(
 		}
 	}
 
-	const itterations = stack.itterations ?? 1;
+	const itterations = stack.iterations ?? 1;
 	if (!Number.isInteger(itterations) || itterations < 0) {
 		throw new Error("Stack itterations must be a non-negative integer");
 	}
@@ -85,14 +111,26 @@ function addStackVoices(
 			const octaveStart = staff.octaveStart ?? 4;
 			const instrument = { ...DEFAULT_INSTRUMENT, ...staff.instrument };
 			for (const event of staff.events) {
-				const effect = mergeEffects(trackEffect, stack.effect, staff.effect, event.effect);
+				const effect = mergeEffects(
+					trackEffect,
+					stack.effect,
+					staff.effect,
+					event.effect,
+				);
 				const startBeat = iterationStart + event.start;
 				const startSample = Math.round(startBeat * (60 / bpm) * sampleRate);
-				const endSample = Math.round((startBeat + event.duration) * (60 / bpm) * sampleRate);
+				const endSample = Math.round(
+					(startBeat + event.duration) * (60 / bpm) * sampleRate,
+				);
 				voices.push({
 					startSample,
 					endSample,
-					frequency: noteToFrequency(event.noteIndex, noteStart, octaveStart, scale),
+					frequency: noteToFrequency(
+						event.noteIndex,
+						noteStart,
+						octaveStart,
+						scale,
+					),
 					velocity: effect.velocity,
 					pan: effect.pan,
 					instrument,
@@ -104,34 +142,54 @@ function addStackVoices(
 	return STAFF_BEATS * itterations;
 }
 
-export function renderMusic(music: Track, options: RenderOptions): Float32Array {
+export function renderMusic(
+	music: Track,
+	options: RenderOptions,
+): Float32Array {
 	if (music.bpm <= 0) throw new Error("Music BPM must be greater than zero");
 	const voices: Voice[] = [];
 	let totalBeats = 0;
 	for (const stack of music.sequence) {
-		totalBeats += addStackVoices(stack, totalBeats, music.effect, music.bpm, options.sampleRate, voices);
+		totalBeats += addStackVoices(
+			stack,
+			totalBeats,
+			music.effect,
+			music.bpm,
+			options.sampleRate,
+			voices,
+		);
 	}
 
 	const releaseSamples = music.loop
 		? 0
 		: voices.reduce(
-				(maximum, voice) => Math.max(maximum, Math.ceil(voice.instrument.release * options.sampleRate)),
+				(maximum, voice) =>
+					Math.max(
+						maximum,
+						Math.ceil(voice.instrument.release * options.sampleRate),
+					),
 				0,
 			);
-	const totalSamples = Math.ceil(totalBeats * (60 / music.bpm) * options.sampleRate) + releaseSamples;
+	const totalSamples =
+		Math.ceil(totalBeats * (60 / music.bpm) * options.sampleRate) +
+		releaseSamples;
 	const output = new Float32Array(totalSamples * options.channels);
 
 	for (const voice of voices) {
-		const left = Math.cos((voice.pan + 1) * Math.PI / 4);
-		const right = Math.sin((voice.pan + 1) * Math.PI / 4);
-		const voiceEnd = voice.endSample + voice.instrument.release * options.sampleRate;
+		const left = Math.cos(((voice.pan + 1) * Math.PI) / 4);
+		const right = Math.sin(((voice.pan + 1) * Math.PI) / 4);
+		const voiceEnd =
+			voice.endSample + voice.instrument.release * options.sampleRate;
 
 		for (let sample = voice.startSample; sample < voiceEnd; sample++) {
-			const amplitude = waveformSample(voice.instrument.waveform, voice.phase)
-				* voice.instrument.amplitude
-				* voice.velocity
-				* envelope(voice, sample, options.sampleRate);
-			voice.phase = (voice.phase + 2 * Math.PI * voice.frequency / options.sampleRate) % (2 * Math.PI);
+			const amplitude =
+				waveformSample(voice.instrument.waveform, voice.phase) *
+				voice.instrument.amplitude *
+				voice.velocity *
+				envelope(voice, sample, options.sampleRate);
+			voice.phase =
+				(voice.phase + (2 * Math.PI * voice.frequency) / options.sampleRate) %
+				(2 * Math.PI);
 
 			const offset = sample * options.channels;
 			if (output[offset] !== undefined) output[offset] += amplitude * left;

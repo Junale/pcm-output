@@ -13,7 +13,14 @@ export type Instrument = {
 
 export type NoteName = keyof typeof NOTE_OFFSETS;
 
-export type Scale = "major" | "minor" | "dorian" | "phrygian" | "lydian" | "mixolydian" | "locrian";
+export type Scale =
+	| "major"
+	| "minor"
+	| "dorian"
+	| "phrygian"
+	| "lydian"
+	| "mixolydian"
+	| "locrian";
 
 export type Effect = {
 	velocity?: number;
@@ -39,7 +46,7 @@ export type Staff = {
 export type Stack = {
 	staffs: Staff[];
 	effect?: Effect;
-	itterations?: number;
+	iterations?: number;
 };
 
 export type Track = {
