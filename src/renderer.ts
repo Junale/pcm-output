@@ -85,6 +85,7 @@ function addStackVoices(
 	sampleRate: number,
 	voices: Voice[],
 ): number {
+	let staffCount = 1;
 	for (const staff of stack.staffs) {
 		for (const event of staff.events) {
 			if (event.start < 0 || event.duration <= 0) {
@@ -92,9 +93,10 @@ function addStackVoices(
 					"Note events need a non-negative start and positive duration",
 				);
 			}
-			if (event.start + event.duration > STAFF_BEATS) {
-				throw new Error("Staff events must end within four beats");
-			}
+			staffCount = Math.max(
+				staffCount,
+				Math.ceil((event.start + event.duration) / STAFF_BEATS),
+			);
 		}
 	}
 
@@ -104,7 +106,8 @@ function addStackVoices(
 	}
 
 	for (let iteration = 0; iteration < itterations; iteration++) {
-		const iterationStart = stackStart + iteration * STAFF_BEATS;
+		const iterationStart =
+			stackStart + iteration * STAFF_BEATS * staffCount;
 		for (const staff of stack.staffs) {
 			const scale = staff.scale ?? "major";
 			const noteStart = staff.noteStart ?? "C";
@@ -139,7 +142,7 @@ function addStackVoices(
 			}
 		}
 	}
-	return STAFF_BEATS * itterations;
+	return STAFF_BEATS * staffCount * itterations;
 }
 
 export function renderMusic(

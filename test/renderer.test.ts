@@ -64,10 +64,52 @@ describe("renderMusic", () => {
 		expect(() => renderMusic({ ...track([]), bpm: 0 }, options)).toThrow();
 	});
 
-	test("keeps every staff within four beats", () => {
+	test("allows event timing beyond one four-beat block", () => {
 		expect(() =>
 			renderMusic(track([{ staffs: [staff(0, 4.01)] }]), options),
-		).toThrow("Staff events must end within four beats");
+		).not.toThrow();
+	});
+
+	test("expands a stack into four-beat staff blocks", () => {
+		const samples = renderMusic(
+			track([
+				{
+					staffs: [
+						{
+							...staff(0, 1),
+							events: [0, 1, 2, 3, 4, 5].map((start) => ({
+								start,
+								duration: 1,
+								noteIndex: 0,
+							})),
+						},
+					],
+				},
+			]),
+			options,
+		);
+
+		expect(samples.length).toBe(810);
+		expect(Math.abs(samples[401] ?? 0)).toBeGreaterThan(0);
+		expect(Math.abs(samples[501] ?? 0)).toBeGreaterThan(0);
+	});
+
+	test("allows events to cross four-beat staff boundaries", () => {
+		const samples = renderMusic(
+			track([
+				{
+					staffs: [
+						{
+							...staff(0),
+							events: [{ start: 3.5, duration: 1, noteIndex: 0 }],
+						},
+					],
+				},
+			]),
+			options,
+		);
+
+		expect(samples.length).toBe(810);
 	});
 
 	test("keeps the next stack aligned to the four-beat staff boundary", () => {
