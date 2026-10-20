@@ -50,7 +50,7 @@ const SnareLine: Staff = {
 
 const Intro: Stack = {
 	staffs: [KickLine, SnareLine],
-	itterations: 1,
+	itterations: 10,
 };
 
 const music: Track = {
@@ -61,3 +61,4 @@ const music: Track = {
 
 const engine = new MusicEngine();
 engine.play(music);
+await engine.writeWav("debug.wav", music);
