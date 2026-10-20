@@ -14,6 +14,7 @@ export type Instrument = {
 export type NoteName = keyof typeof NOTE_OFFSETS;
 
 export type Scale =
+	| "chromatic"
 	| "major"
 	| "minor"
 	| "dorian"
