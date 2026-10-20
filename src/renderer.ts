@@ -20,11 +20,12 @@ function noteToFrequency(
 	octaveStart: number,
 	scale: Scale,
 ): number {
-	if (!Number.isInteger(noteIndex) || noteIndex < 0)
-		throw new Error("noteIndex must be a non-negative integer");
+	if (!Number.isInteger(noteIndex))
+		throw new Error("noteIndex must be an integer");
 	const intervals = SCALE_INTERVALS[scale];
 	const octaveOffset = Math.floor(noteIndex / intervals.length);
-	const scaleIndex = noteIndex % intervals.length;
+	const scaleIndex =
+		((noteIndex % intervals.length) + intervals.length) % intervals.length;
 	const interval = intervals[scaleIndex];
 	if (interval === undefined)
 		throw new Error(`Invalid note index: ${noteIndex}`);

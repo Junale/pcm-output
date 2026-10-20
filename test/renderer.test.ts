@@ -44,6 +44,28 @@ describe("renderMusic", () => {
 		expect(major[1]).not.toBe(minor[1]);
 	});
 
+	test("supports negative noteIndex values by descending the scale", () => {
+		const belowRoot = renderMusic(
+			track([{ staffs: [staff(-1)] }]),
+			options,
+		);
+		const equivalentLowerOctave = renderMusic(
+			track([
+				{
+					staffs: [
+						{
+							...staff(6),
+							octaveStart: -2,
+						},
+					],
+				},
+			]),
+			options,
+		);
+
+		expect(belowRoot[1]).toBeCloseTo(equivalentLowerOctave[1] ?? 0, 6);
+	});
+
 	test("applies event velocity and pan effects", () => {
 		const samples = renderMusic(
 			track([{ staffs: [staff(0, 1, { velocity: 0.5, pan: 1 })] }]),
